@@ -54,7 +54,6 @@ class CPULoad(object):
     @staticmethod
     def get_data(data, out_queue):
         cpuload = CPULoad()
-        logging.debug("Running sensor: %s" % cpuload.get_kind())
         try:
             cpu = cpuload.read_cpu('/proc/loadavg')
         except Exception as e:

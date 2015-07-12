@@ -60,7 +60,6 @@ class ExternalIP(object):
     def get_data(data, out_queue):
         ip = ExternalIP()
         # address = ""
-        logging.debug("Running sensor: %s" % ip.get_kind())
         try:
             address = ip.get_ip(server)
             logging.debug("IP-Address: %s" % address)

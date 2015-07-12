@@ -74,7 +74,12 @@ class SNMPCustom(object):
                             "default": "#",
                             "help": "Enter a 'unit' string, e.g. 'ms', 'Kbyte' (for display purposes only)."
                         },
-
+                        {
+                            "type": "edit",
+                            "name": "channel_name",
+                            "caption": "Channelname",
+                            "help": "Sets the name for the main channel."
+                        },
                         {
                             "type": "radio",
                             "name": "value_type",
@@ -123,6 +128,7 @@ class SNMPCustom(object):
                             "name": "community",
                             "caption": "Community String",
                             "required": "1",
+                            "default": "public",
                             "help": "Please enter the community string."
                         },
                         {
@@ -141,7 +147,7 @@ class SNMPCustom(object):
             sensordefinition = ""
         return sensordefinition
 
-    def snmp_get(self, oid, target, snmp_type, community, port, unit, multiplication=1, division=1):
+    def snmp_get(self, oid, target, channel_name, snmp_type, community, port, unit, multiplication=1, division=1):
         try:
             sys.path.append('./')
             from pysnmp.entity.rfc3413.oneliner import cmdgen
@@ -155,7 +161,7 @@ class SNMPCustom(object):
         if snmp_type == "1":
             channellist = [
                 {
-                    "name": "Value",
+                    "name": channel_name,
                     "mode": "integer",
                     "kind": "custom",
                     "customunit": "",
@@ -165,7 +171,7 @@ class SNMPCustom(object):
         else:
             channellist = [
                 {
-                    "name": "Value",
+                    "name": channel_name,
                     "mode": "counter",
                     "kind": "custom",
                     "customunit": "%s" % unit,
@@ -178,10 +184,9 @@ class SNMPCustom(object):
     def get_data(data, out_queue):
         snmpcustom = SNMPCustom()
         try:
-            snmp_data = snmpcustom.snmp_get(str(data['oid']), data['host'], data['value_type'],
+            snmp_data = snmpcustom.snmp_get(str(data['oid']), data['host'], data['channel_name'], data['value_type'],
                                             data['community'], int(data['port']), data['unit'],
                                             int(data['multiplication']), int(data['division']))
-            logging.debug("Running sensor: %s" % snmpcustom.get_kind())
         except Exception as get_data_error:
             logging.error("Ooops Something went wrong with '%s' sensor %s. Error: %s" % (snmpcustom.get_kind(),
                                                                                          data['sensorid'],
