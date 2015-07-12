@@ -117,7 +117,6 @@ class ADNS(object):
     @staticmethod
     def get_data(data, out_queue):
         adns = ADNS()
-        logging.debug("Running sensor: %s" % adns.get_kind())
         try:
             start_time = timeit.default_timer()
             result = adns.get_record(data['timeout'], data['port'], data['domain'], data['type'], data['host'])

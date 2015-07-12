@@ -115,7 +115,6 @@ class Port(object):
         port = Port()
         try:
             port_data = port.port(data['host'], data['timeout'], data['targetport'])
-            logging.debug("Running sensor: %s" % port.get_kind())
         except Exception as e:
             logging.error("Ooops Something went wrong with '%s' sensor %s. Error: %s" % (port.get_kind(),
                                                                                          data['sensorid'], e))
