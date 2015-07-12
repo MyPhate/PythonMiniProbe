@@ -77,6 +77,7 @@ class CPUTemp(object):
     @staticmethod
     def get_data(data, out_queue):
         temperature = CPUTemp()
+        logging.debug("Running sensor: %s" % temperature.get_kind())
         try:
             tmp = temperature.read_temp(data)
         except Exception as e:

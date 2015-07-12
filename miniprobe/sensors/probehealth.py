@@ -88,6 +88,7 @@ class Probehealth(object):
             temperature = probehealth.read_temp()
             disk = probehealth.read_disk()
             health = probehealth.read_probe_health(data)
+            logging.debug("Running sensor: %s" % probehealth.get_kind())
         except Exception as e:
             logging.error("Ooops Something went wrong with '%s' sensor %s. Error: %s" % (probehealth.get_kind(),
                                                                                          data['sensorid'], e))

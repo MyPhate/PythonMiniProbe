@@ -93,6 +93,7 @@ class NMAP(object):
         alive_str = ""
         alive_cnt = 0
         try:
+            logging.debug("Running sensor: %s" % nmap.get_kind())
             if '/' in data['ip']:
                 validCIDR = nmap.validateCIDRBlock(data['ip'])
                 if validCIDR:

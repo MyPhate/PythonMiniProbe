@@ -57,6 +57,7 @@ class Diskspace(object):
         diskspace = Diskspace()
         try:
             disk = diskspace.read_disk()
+            logging.debug("Running sensor: %s" % diskspace.get_kind())
         except Exception as e:
             logging.error("Ooops Something went wrong with '%s' sensor %s. Error: %s" % (diskspace.get_kind(),
                                                                                          data['sensorid'], e))

@@ -107,8 +107,7 @@ def main():
                 logging.debug("Status Code: %s | Message: %s" % (request_announce.status_code, request_announce.text))
                 request_announce.close()
             except requests.exceptions.Timeout:
-                logging.error("ANNOUNCE Timeout - try again in %s seconds" % string(int(config['baseinterval']) / 2))
-                time.sleep(int(config['baseinterval']) / 2)
+                logging.error("ANNOUNCE Timeout: " + str(data_announce))
             except Exception as announce_error:
                 logging.error(announce_error)
                 time.sleep(int(config['baseinterval']) / 2)
@@ -152,35 +151,24 @@ def main():
             gc.collect()
             if str(json_response) != '[]':
                 json_history = json_response
-
+                logging.debug("json response: %s" % json_response)
                 if config['subprocs']:
                     json_response_chunks = [json_response[i:i + int(config['subprocs'])]
                                             for i in range(0, len(json_response), int(config['subprocs']))]
                 else:
                     json_response_chunks = [json_response[i:i + 10]
                                             for i in range(0, len(json_response), 10)]
-
                 for element in json_response_chunks:
                     for part in element:
                         logging.debug(part)
-                        found = False
                         for sensor in sensor_list:
-                            if (part['kind'] == sensor.get_kind() or part['kind'] == sensor.get_kind()[1:len(sensor.get_kind())]):
-                                logging.debug("Running sensor %s for id: %s" % (sensor.get_kind(), part['sensorid']))
-                                part['kind'] = sensor.get_kind()
-                                p = multiprocessing.Process(target=sensor.get_data, args=(part, out_queue), name=part['kind'])
+                            if part['kind'] == sensor.get_kind():
+                                p = multiprocessing.Process(target=sensor.get_data, args=(part, out_queue),
+                                                            name=part['kind'])
                                 procs.append(p)
                                 p.start()
-                                found = True
-                                break
                             else:
                                 pass
-                        
-                        if not found:
-                            logging.debug("No sensor found for id %s for kind %s" % (part['sensorid'], part['kind']))
-                        else:
-                            pass
-                            
                         gc.collect()
                     try:
                         while len(json_payload_data) < len(element):
@@ -188,6 +176,7 @@ def main():
                             json_payload_data.append(out)
                     except Exception as ex:
                         logging.error(ex)
+                        pass
 
                     url_data = mini_probe.create_url(config, 'data', http)
                     try:

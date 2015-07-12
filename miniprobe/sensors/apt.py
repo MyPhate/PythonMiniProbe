@@ -105,6 +105,7 @@ class APT(object):
                 "message": "OK",
                 "channel": aptdata
             }
+            logging.debug("Running sensor: %s" % apt.get_kind())
         except Exception as e:
             logging.error("Ooops Something went wrong with '%s' sensor %s. Error: %s" % (apt.get_kind(),
                                                                                          data['sensorid'], e))

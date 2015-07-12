@@ -31,7 +31,7 @@ except Exception as e:
     pass
 
 
-class SNMPUptime(object):
+class SNMPTraffic(object):
 
     def __init__(self):
         gc.enable()
@@ -41,7 +41,7 @@ class SNMPUptime(object):
         """
         return sensor kind
         """
-        return "mpsnmpuptime"
+        return "mpsnmptraffic"
 
     @staticmethod
     def get_sensordef():
@@ -49,12 +49,26 @@ class SNMPUptime(object):
         Definition of the sensor and data to be shown in the PRTG WebGUI
         """
         sensordefinition = {
-            "kind": SNMPUptime.get_kind(),
-            "name": "SNMP Uptime",
-            "description": "Monitors the uptime of the host using SNMP",
-            "help": "Monitors the uptime of the host using SNMP",
-            "tag": "mpsnmpuptime",
+            "kind": SNMPTraffic.get_kind(),
+            "name": "SNMP Traffic",
+            "description": "Monitors Traffic on provided interface using SNMP",
+            "help": "Monitors Traffic on provided interface using SNMP",
+            "tag": "mpsnmptrafficsensor",
             "groups": [
+                {
+                    "name": "Interface Definition",
+                    "caption": "Interface Definition",
+                    "fields": [
+                        {
+                            "type": "edit",
+                            "name": "ifindex",
+                            "caption": "Interface Index (ifIndex)",
+                            "required": "1",
+                            "help": "Please enter the ifIndex of the interface to be monitored."
+                        }
+
+                    ]
+                },
                 {
                     "name": "SNMP Settings",
                     "caption": "SNMP Settings",
@@ -77,7 +91,6 @@ class SNMPUptime(object):
                             "name": "community",
                             "caption": "Community String",
                             "required": "1",
-                            "default": "public",
                             "help": "Please enter the community string."
                         },
                         {
@@ -87,6 +100,18 @@ class SNMPUptime(object):
                             "required": "1",
                             "default": 161,
                             "help": "Provide the SNMP port"
+                        },
+                        {
+                            "type": "radio",
+                            "name": "snmp_counter",
+                            "caption": "SNMP Counter Type",
+                            "required": "1",
+                            "help": "Choose the Counter Type to be used",
+                            "options": {
+                                "1": "32 bit",
+                                "2": "64 bit"
+                            },
+                            "default": 2
                         }
                     ]
                 }
@@ -97,53 +122,65 @@ class SNMPUptime(object):
             sensordefinition = ""
         return sensordefinition
 
-    def snmp_get(self, target, community, port):
-        data = ["1.3.6.1.2.1.25.1.1.0"]
+    def snmp_get(self, target, countertype, community, port, ifindex):
+        if countertype == "1":
+            data = ["1.3.6.1.2.1.2.2.1.10.%s" % str(ifindex), "1.3.6.1.2.1.2.2.1.16.%s" % str(ifindex)]
+        else:
+            data = ["1.3.6.1.2.1.31.1.1.1.6.%s" % str(ifindex), "1.3.6.1.2.1.31.1.1.1.10.%s" % str(ifindex)]
         snmpget = cmdgen.CommandGenerator()
         error_indication, error_status, error_index, var_binding = snmpget.getCmd(
-            cmdgen.CommunityData(community), 
-            cmdgen.UdpTransportTarget((target, port)), 
-            *data
-        )
-        if (error_indication or not var_binding[0][1]):
-            data = ["1.3.6.1.2.1.1.3.0"]
-            snmpget = cmdgen.CommandGenerator()
-            error_indication, error_status, error_index, var_binding = snmpget.getCmd(
-                cmdgen.CommunityData(community), 
-                cmdgen.UdpTransportTarget((target, port)), 
-                *data
-            )
-            if error_indication:
-                raise Exception(error_indication)
-        
-        uptime = float(var_binding[0][1]) * 0.01
-     
+            cmdgen.CommunityData(community), cmdgen.UdpTransportTarget((target, port)), *data)
+        if error_indication:
+            raise Exception(error_indication)
+        if countertype == "1":
+            traffic_in = str(long(var_binding[0][1]))
+            traffic_out = str(long(var_binding[1][1]))
+            traffic_total = str(long(var_binding[0][1]) + long(var_binding[1][1]))
+        else:
+            traffic_in = str(long(var_binding[0][1]))
+            traffic_out = str(long(var_binding[1][1]))
+            traffic_total = str(long(var_binding[0][1]) + long(var_binding[1][1]))
+
         channellist = [
             {
-                "name": "Uptime",
-                "mode": "float",
-                "unit": "TimeSeconds",
-                "value": uptime
+                "name": "Traffic Total",
+                "mode": "counter",
+                "unit": "BytesBandwidth",
+                "value": traffic_total
+            },
+            {
+                "name": "Traffic In",
+                "mode": "counter",
+                "unit": "BytesBandwidth",
+                "value": traffic_in
+            },
+            {
+                "name": "Traffic Out",
+                "mode": "counter",
+                "unit": "BytesBandwidth",
+                "value": traffic_out
             }
         ]
         return channellist
 
     @staticmethod
     def get_data(data, out_queue):
-        snmpuptime = SNMPUptime()
+        snmptraffic = SNMPTraffic()
         try:
-            snmp_data = snmpuptime.snmp_get(data['host'], data['community'], int(data['port']))
+            snmp_data = snmptraffic.snmp_get(data['host'], data['snmp_counter'],
+                                             data['community'], int(data['port']), data['ifindex'])
+            logging.debug("Running sensor: %s" % snmptraffic.get_kind())
         except Exception as get_data_error:
-            logging.error("Ooops Something went wrong with '%s' sensor %s. Error: %s" % (snmpuptime.get_kind(),
+            print get_data_error
+            logging.error("Ooops Something went wrong with '%s' sensor %s. Error: %s" % (snmptraffic.get_kind(),
                                                                                          data['sensorid'],
                                                                                          get_data_error))
             data = {
-             "sensorid": int(data['sensorid']),
-             "error": "Response",
-             "code": 1,
-             "message": "No SNMP response received before timeout"
+                "sensorid": int(data['sensorid']),
+                "error": "Exception",
+                "code": 1,
+                "message": "SNMP Request failed. See log for details"
             }
-
             out_queue.put(data)
             return 1
 
@@ -152,7 +189,7 @@ class SNMPUptime(object):
             "message": "OK",
             "channel": snmp_data
         }
-        del snmpuptime
+        del snmptraffic
         gc.collect()
         out_queue.put(data)
         return 0

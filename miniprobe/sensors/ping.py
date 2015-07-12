@@ -155,6 +155,7 @@ class Ping(object):
                     "message": "OK",
                     "channel": pingdata
                 }
+            logging.debug("Running sensor: %s" % ping.get_kind())
             logging.debug("Host: %s Pingcount: %s timeout: %s packetsize: %s" % (data['host'], data['pingcount'],
                                                                                  data['timeout'], data['packsize']))
         except Exception as e:
