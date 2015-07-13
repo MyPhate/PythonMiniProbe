@@ -165,6 +165,7 @@ def main():
                         logging.debug(part)
                         found = False
                         for sensor in sensor_list:
+                            # Workaround: sensorids greater 9999 cuts the first letter of the kind
                             if (part['kind'] == sensor.get_kind() or part['kind'] == sensor.get_kind()[1:len(sensor.get_kind())]):
                                 logging.debug("Running sensor %s for id: %s" % (sensor.get_kind(), part['sensorid']))
                                 part['kind'] = sensor.get_kind()
@@ -173,35 +174,37 @@ def main():
                                 p.start()
                                 found = True
                                 break
-                            else:
-                                pass
                         
                         if not found:
-                            logging.debug("No sensor found for id %s for kind %s" % (part['sensorid'], part['kind']))
-                        else:
-                            pass
+                            logging.debug("No sensor found for id %s of kind %s" % (part['sensorid'], part['kind']))
                             
                         gc.collect()
                     try:
                         while len(json_payload_data) < len(element):
-                            out = out_queue.get()
-                            json_payload_data.append(out)
+                            json_payload_data.append(out_queue.get())
                     except Exception as ex:
                         logging.error(ex)
 
                     url_data = mini_probe.create_url(config, 'data', http)
-                    try:
-                        request_data = requests.post(url_data, data=json.dumps(json_payload_data),
-                                                     verify=False, timeout=30)
-                        logging.info("DATA request successfully sent to PRTG Core Server at %s:%s. Status: %s"
-                                     % (config["server"], config["port"], request_data.status_code))
-                        logging.debug("data_url: " + url_data + "\ndata_data: " + str(json_payload_data))
-                        request_data.close()
-                        json_payload_data = []
-                    except requests.exceptions.Timeout:
-                        logging.error("DATA Timeout: " + str(json_payload_data).strip('[]'))
-                    except Exception as announce_error:
-                        logging.error(announce_error)
+                    
+                    # Try to send data, stops only when it's successfull or a bad mistake happend
+                    data_sent = False
+                    while data_sent:
+                        try:
+                            request_data = requests.post(url_data, data=json.dumps(json_payload_data),
+                                                         verify=False, timeout=30)
+                            logging.info("DATA request successfully sent to PRTG Core Server at %s:%s. Status: %s"
+                                         % (config["server"], config["port"], request_data.status_code))
+                            logging.debug("data_url: " + url_data + "\ndata_data: " + str(json_payload_data))
+                            request_data.close()
+                            json_payload_data = []
+                            data_sent = True
+                        except requests.exceptions.Timeout:
+                            logging.error("DATA send to PRTG Core Server timed out. Try again."
+                        except Exception as announce_error:
+                            logging.error(announce_error)
+                            data_sent = True
+                            
                     if len(json_response) > 10:
                         time.sleep((int(config['baseinterval']) * (9 / len(json_response))))
                     else:
