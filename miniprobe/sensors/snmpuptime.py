@@ -105,6 +105,7 @@ class SNMPUptime(object):
             cmdgen.UdpTransportTarget((target, port)), 
             *data
         )
+        # At error, try again with fallback solution
         if (error_indication or is not var_binding[0][1]):
             data = ["1.3.6.1.2.1.1.3.0"]
             snmpget = cmdgen.CommandGenerator()
@@ -113,12 +114,11 @@ class SNMPUptime(object):
                 cmdgen.UdpTransportTarget((target, port)), 
                 *data
             )
+            # still not working? kick it out
             if error_indication:
                 raise Exception(error_indication)
         
-        logging.error("Uptime-Error: %s - Type: %s" % (var_binding[0][1], type(var_binding[0])))
-        uptime = float(var_binding[0][1]) * 0.01
-     
+        uptime = float(var_binding[0][1]) * 0.01    
         channellist = [
             {
                 "name": "Uptime",
