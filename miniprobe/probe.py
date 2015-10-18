@@ -200,7 +200,7 @@ def main():
                             json_payload_data = []
                             data_sent = False
                         except requests.exceptions.Timeout:
-                            logging.error("DATA send to PRTG Core Server timed out. Try again."
+                            logging.error("DATA send to PRTG Core Server timed out. Try again.")
                         except Exception as announce_error:
                             logging.error(announce_error)
                             data_sent = False
