@@ -188,7 +188,7 @@ def main():
                     url_data = mini_probe.create_url(config, 'data', http)
                     
                     # Try to send data, stops only when it's successfull or a bad mistake happend
-                    data_sent = False
+                    data_sent = True
                     while data_sent:
                         try:
                             request_data = requests.post(url_data, data=json.dumps(json_payload_data),
@@ -198,12 +198,12 @@ def main():
                             logging.debug("data_url: " + url_data + "\ndata_data: " + str(json_payload_data))
                             request_data.close()
                             json_payload_data = []
-                            data_sent = True
+                            data_sent = False
                         except requests.exceptions.Timeout:
                             logging.error("DATA send to PRTG Core Server timed out. Try again."
                         except Exception as announce_error:
                             logging.error(announce_error)
-                            data_sent = True
+                            data_sent = False
                             
                     if len(json_response) > 10:
                         time.sleep((int(config['baseinterval']) * (9 / len(json_response))))
